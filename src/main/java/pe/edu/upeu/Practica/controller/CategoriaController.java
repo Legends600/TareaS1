@@ -1,8 +1,6 @@
 package pe.edu.upeu.Practica.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pe.edu.upeu.Practica.entity.Categoria;
 import pe.edu.upeu.Practica.service.service.CategoriaService;
 
@@ -19,5 +17,10 @@ public class CategoriaController {
     @GetMapping
     public Iterable<Categoria> getCategorias(){
         return categoriaService.readAll();
+    }
+
+    @GetMapping ("/{id}")
+    public Categoria getIdCategorias(@PathVariable Long id){
+        return categoriaService.read(id).get();
     }
 }
