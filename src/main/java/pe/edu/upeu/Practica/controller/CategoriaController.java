@@ -1,12 +1,15 @@
 package pe.edu.upeu.Practica.controller;
 
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pe.edu.upeu.Practica.entity.Categoria;
+import pe.edu.upeu.Practica.dto.CategoriaRequestDTO;
+import pe.edu.upeu.Practica.dto.CategoriaResponseDTO;
 import pe.edu.upeu.Practica.service.service.CategoriaService;
 
-
 @RestController
-@RequestMapping("/api/categorias")
+@RequestMapping("/api/v1/categorias")
 public class CategoriaController {
     private final CategoriaService categoriaService;
 
@@ -15,12 +18,29 @@ public class CategoriaController {
     }
 
     @GetMapping
-    public Iterable<Categoria> getCategorias(){
-        return categoriaService.readAll();
+    public ResponseEntity<Iterable<CategoriaResponseDTO>> findAll() {
+        return ResponseEntity.ok(categoriaService.readAll());
     }
 
-    @GetMapping ("/{id}")
-    public Categoria getIdCategorias(@PathVariable Long id){
-        return categoriaService.read(id).get();
+    @GetMapping("/{id}")
+    public ResponseEntity<CategoriaResponseDTO> findById(@PathVariable Long id) {
+        return ResponseEntity.ok(categoriaService.read(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<CategoriaResponseDTO> create(@Valid @RequestBody CategoriaRequestDTO requestDTO) {
+        CategoriaResponseDTO response = categoriaService.create(requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CategoriaResponseDTO> update(@PathVariable Long id, @Valid @RequestBody CategoriaRequestDTO requestDTO) {
+        return ResponseEntity.ok(categoriaService.update(id, requestDTO));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        categoriaService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

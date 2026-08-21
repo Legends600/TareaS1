@@ -1,9 +1,11 @@
 package pe.edu.upeu.Practica.service.generic;
 
-public interface CrudService<T, ID> {
-    T save(T entity);
-    T update(T entity);
+import java.util.Optional;
+
+public interface CrudService<REQ, RES, ID> {
+    RES create(REQ t);
+    RES update(ID id, REQ t);
+    RES read(ID id);
     void delete(ID id);
-    T read(ID id);
-    Iterable<T> readAll();
+    Iterable<RES> readAll();
 }
