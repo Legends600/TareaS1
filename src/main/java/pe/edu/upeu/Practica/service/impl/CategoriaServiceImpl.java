@@ -8,11 +8,9 @@ import pe.edu.upeu.Practica.dto.CategoriaRequestDTO;
 import pe.edu.upeu.Practica.dto.CategoriaResponseDTO;
 import pe.edu.upeu.Practica.entity.Categoria;
 import pe.edu.upeu.Practica.exception.RecursosNoEncontradoException;
-import pe.edu.upeu.Practica.exception.ReglaNegocioExeption;
+import pe.edu.upeu.Practica.exception.ReglaNegocioException;
 import pe.edu.upeu.Practica.repository.CategoriaRepository;
 import pe.edu.upeu.Practica.service.service.CategoriaService;
-
-import java.util.Optional;
 
 
 @Service
@@ -29,7 +27,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     public CategoriaResponseDTO create(CategoriaRequestDTO t) {
         String nombre = t.getNombre().trim();
         if(categoriaRepository.existsByNombreIgnoreCase(nombre)){
-            throw new ReglaNegocioExeption(
+            throw new ReglaNegocioException(
                     "Ya existe una categoria con el nombre: " + nombre
             );
         }

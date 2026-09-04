@@ -10,11 +10,11 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ErrorResponse {
-    private LocalDateTime fecha;
-    private Integer status;
+public class ErrorResponseDTO {
+    private LocalDateTime timestamp;
+    private int status;
     private String error;
-    private String mensaje;
+    private String message;
     private String path;
-    private Map<String, String> errores;
+    private Map<String, String> validationErrors;
 }

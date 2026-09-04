@@ -9,7 +9,7 @@ import pe.edu.upeu.Practica.dto.ProductoResponseDTO;
 import pe.edu.upeu.Practica.entity.Categoria;
 import pe.edu.upeu.Practica.entity.Producto;
 import pe.edu.upeu.Practica.exception.RecursosNoEncontradoException;
-import pe.edu.upeu.Practica.exception.ReglaNegocioExeption;
+import pe.edu.upeu.Practica.exception.ReglaNegocioException;
 import pe.edu.upeu.Practica.repository.CategoriaRepository;
 import pe.edu.upeu.Practica.repository.ProductoRepository;
 import pe.edu.upeu.Practica.service.service.ProductoService;
@@ -32,7 +32,7 @@ public class ProductoServiceImpl implements ProductoService {
     public ProductoResponseDTO create(ProductoRequestDTO t) {
         String nombre = t.getNombre().trim();
         if (productoRepository.existsByNombreIgnoreCase(nombre)) {
-            throw new ReglaNegocioExeption(
+            throw new ReglaNegocioException(
                     "Ya existe un producto con el nombre: " + nombre
             );
         }
@@ -63,7 +63,7 @@ public class ProductoServiceImpl implements ProductoService {
 
         String nombre = t.getNombre().trim();
         if (productoRepository.existsByNombreIgnoreCaseAndIdNot(nombre, aLong)) {
-            throw new ReglaNegocioExeption(
+            throw new ReglaNegocioException(
                     "Ya existe un producto con el nombre: " + nombre
             );
         }
