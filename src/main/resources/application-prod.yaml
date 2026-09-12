@@ -20,3 +20,6 @@ springdoc:
     enable: false
   api-docs:
     enabled: false
+logging:
+  level:
+    pe.edu.upeu.Practica: INFO
