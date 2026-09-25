@@ -23,3 +23,6 @@ springdoc:
 logging:
   level:
     pe.edu.upeu.Practica: INFO
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}

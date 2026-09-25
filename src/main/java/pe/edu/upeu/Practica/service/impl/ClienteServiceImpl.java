@@ -10,6 +10,7 @@ import pe.edu.upeu.Practica.entity.Cliente;
 import pe.edu.upeu.Practica.exception.RecursosNoEncontradoException;
 import pe.edu.upeu.Practica.exception.ReglaNegocioException;
 import pe.edu.upeu.Practica.repository.ClienteRepository;
+import pe.edu.upeu.Practica.repository.VentaRepository;
 import pe.edu.upeu.Practica.service.service.ClienteService;
 
 @Service
@@ -18,10 +19,13 @@ public class ClienteServiceImpl implements ClienteService {
             LoggerFactory.getLogger(ClienteServiceImpl.class);
 
     private final ClienteRepository clienteRepository;
+    private final VentaRepository ventaRepository;
 
     public ClienteServiceImpl(
-            ClienteRepository clienteRepository) {
+            ClienteRepository clienteRepository,
+            VentaRepository ventaRepository) {
         this.clienteRepository = clienteRepository;
+        this.ventaRepository = ventaRepository;
     }
 
     @Override
@@ -170,6 +174,12 @@ public class ClienteServiceImpl implements ClienteService {
                                         "Cliente no encontrado con id: " + aLong
                                 )
                         );
+
+        if (ventaRepository.existsByClienteId(aLong)) {
+            throw new ReglaNegocioException(
+                    "No se puede eliminar el cliente porque tiene ventas registradas"
+            );
+        }
 
         clienteRepository.delete(cliente);
 
