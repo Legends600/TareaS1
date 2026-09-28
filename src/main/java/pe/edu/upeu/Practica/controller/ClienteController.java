@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upeu.Practica.dto.ClienteRequestDTO;
 import pe.edu.upeu.Practica.dto.ClienteResponseDTO;
+import pe.edu.upeu.Practica.dto.PaginaResponseDTO;
 import pe.edu.upeu.Practica.service.service.ClienteService;
 
 @RestController
@@ -30,10 +31,14 @@ public class ClienteController {
     }
 
     @GetMapping
-    public ResponseEntity<Iterable<ClienteResponseDTO>> readAll() {
+    public ResponseEntity<PaginaResponseDTO<ClienteResponseDTO>> readAll(
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanio,
+            @RequestParam(defaultValue = "apellidos") String ordenarPor,
+            @RequestParam(defaultValue = "asc") String direccion) {
 
         return ResponseEntity.ok(
-                clienteService.readAll()
+                clienteService.listarPaginado(pagina, tamanio, ordenarPor, direccion)
         );
     }
 
