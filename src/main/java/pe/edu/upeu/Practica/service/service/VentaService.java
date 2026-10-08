@@ -1,5 +1,6 @@
 package pe.edu.upeu.Practica.service.service;
 
+import pe.edu.upeu.Practica.dto.PaginaResponseDTO;
 import pe.edu.upeu.Practica.dto.VentaRequestDTO;
 import pe.edu.upeu.Practica.dto.VentaResponseDTO;
 import pe.edu.upeu.Practica.enums.EstadoVenta;
@@ -11,12 +12,15 @@ public interface VentaService {
     VentaResponseDTO registrar(VentaRequestDTO request);
     VentaResponseDTO buscar(Long id);
     List<VentaResponseDTO> listar();
-    List<VentaResponseDTO> buscar(
+    PaginaResponseDTO<VentaResponseDTO> buscar(
             Long clienteId,
             EstadoVenta estado,
             LocalDate desde,
             LocalDate hasta,
             String ordenarPor,
-            String direccion
+            String direccion,
+            int pagina,
+            int tamanio
     );
+    VentaResponseDTO anular(Long id);
 }

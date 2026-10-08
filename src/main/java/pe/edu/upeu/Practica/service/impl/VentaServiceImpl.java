@@ -2,11 +2,13 @@ package pe.edu.upeu.Practica.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.Practica.dto.DetalleVentaRequestDTO;
 import pe.edu.upeu.Practica.dto.DetalleVentaResponseDTO;
+import pe.edu.upeu.Practica.dto.PaginaResponseDTO;
 import pe.edu.upeu.Practica.dto.VentaRequestDTO;
 import pe.edu.upeu.Practica.dto.VentaResponseDTO;
 import pe.edu.upeu.Practica.entity.Cliente;
@@ -78,6 +80,12 @@ public class VentaServiceImpl implements VentaService {
                         + ", solicitado: "+ item.getCantidad());
             }
 
+            // UPDATE condicional: si otra venta consumió el stock después de la lectura, no se descuenta.
+            if (productoRepository.descontarStock(producto.getId(), item.getCantidad()) == 0) {
+                throw new ReglaNegocioException("Stock insuficiente para " + producto.getNombre()
+                        + ". Otra venta acaba de usar las unidades disponibles");
+            }
+
             BigDecimal subtotal = producto.getPrecio().multiply(BigDecimal.valueOf(item.getCantidad()));
 
             DetalleVenta detalle = new DetalleVenta();
@@ -90,8 +98,6 @@ public class VentaServiceImpl implements VentaService {
             venta.agregarDetalle(detalle);
 
             total = total.add(subtotal);
-
-            producto.setStock(producto.getStock()- item.getCantidad());
         }
 
         venta.setTotal(total);
@@ -117,7 +123,7 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<VentaResponseDTO> buscar(Long clienteId, EstadoVenta estado, LocalDate desde, LocalDate hasta, String ordenarPor, String direccion) {
+    public PaginaResponseDTO<VentaResponseDTO> buscar(Long clienteId, EstadoVenta estado, LocalDate desde, LocalDate hasta, String ordenarPor, String direccion, int pagina, int tamanio) {
         long inicio = System.currentTimeMillis();
 
         log.info("Inicio buscar ventas | clienteId={} | estado={} | "
@@ -135,7 +141,13 @@ public class VentaServiceImpl implements VentaService {
                             + hasta + ")");
         }
 
-        Sort sort = construirSort(ordenarPor, direccion);
+        if (pagina < 0 || tamanio < 1 || tamanio > 100) {
+            throw new ReglaNegocioException(
+                    "La página debe ser mayor o igual a 0 y el tamaño estar entre 1 y 100");
+        }
+
+        // id como segundo criterio para que el orden entre páginas sea estable
+        Sort sort = construirSort(ordenarPor, direccion).and(Sort.by("id").descending());
 
         LocalDateTime desdeHora = (desde == null)
                 ? null
@@ -145,21 +157,34 @@ public class VentaServiceImpl implements VentaService {
                 ? null
                 : hasta.atTime(LocalTime.MAX);
 
-        List<VentaResponseDTO> resultado =
+        PaginaResponseDTO<VentaResponseDTO> resultado = PaginaResponseDTO.de(
                 ventaRepository
-                        .buscar(clienteId, estado, desdeHora, hastaHora, sort)
-                        .stream()
-                        .map(this::convertirResponse)
-                        .toList();
+                        .buscar(clienteId, estado, desdeHora, hastaHora, PageRequest.of(pagina, tamanio, sort))
+                        .map(this::convertirResponse));
 
         log.info("Fin buscar ventas | clienteId={} | estado={} | "
                         + "desde={} | hasta={} | orden={} {} | "
                         + "filas={} | duracionMs={}",
                 clienteId, estado, desde, hasta, ordenarPor, direccion,
-                resultado.size(),
+                resultado.getContenido().size(),
                 System.currentTimeMillis() - inicio);
 
         return resultado;
+    }
+
+    @Override
+    @Transactional
+    public VentaResponseDTO anular(Long id) {
+        Venta venta = ventaRepository.findById(id).orElseThrow(() ->
+                new RecursosNoEncontradoException("Venta no encontrada con id: " + id));
+        if (venta.getEstado() == EstadoVenta.ANULADA) {
+            throw new ReglaNegocioException("La venta " + id + " ya se encuentra anulada");
+        }
+        venta.setEstado(EstadoVenta.ANULADA);
+        venta.getDetalles().forEach(d ->
+                productoRepository.reponerStock(d.getProducto().getId(), d.getCantidad()));
+        log.info("Venta id={} anulada; stock repuesto", id);
+        return convertirResponse(venta);
     }
 
     private VentaResponseDTO convertirResponse(Venta venta) {

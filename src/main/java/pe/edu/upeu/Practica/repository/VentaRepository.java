@@ -1,6 +1,7 @@
 package pe.edu.upeu.Practica.repository;
 
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,25 +14,23 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface VentaRepository extends JpaRepository<Venta, Long> {
-    @Query(
-    """
-    SELECT DISTINCT v FROM Venta v 
-        LEFT JOIN FETCH v.cliente c
-        LEFT JOIN FETCH v.detalles d
-        LEFT JOIN FETCH d.producto p
-        WHERE (:clienteId IS NULL OR c.id = :clienteId)
-        AND (:estado IS NULL OR v.estado = :estado)
-        AND (:desde IS NULL OR v.fecha >= :desde)
-        AND (:hasta IS NULL OR v.fecha <= :hasta)
-    """
-    )
-    List<Venta> buscar(
+    String FILTRO_BUSCAR = """
+            WHERE (:clienteId IS NULL OR v.cliente.id = :clienteId)
+            AND (:estado IS NULL OR v.estado = :estado)
+            AND (:desde IS NULL OR v.fecha >= :desde)
+            AND (:hasta IS NULL OR v.fecha <= :hasta)
+            """;
+
+    /** Página de ventas con filtros opcionales; los detalles se cargan al convertir cada venta. */
+    @Query(value = "SELECT v FROM Venta v " + FILTRO_BUSCAR,
+            countQuery = "SELECT COUNT(v) FROM Venta v " + FILTRO_BUSCAR)
+    Page<Venta> buscar(
             @Param("clienteId") Long clienteId,
             @Param("estado") EstadoVenta estado,
-            @Param("desde")LocalDateTime desde,
-            @Param("hasta")LocalDateTime hasta,
-            Sort sort
-            );
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta,
+            Pageable pageable
+    );
     @Query("""
             select new pe.edu.upeu.Practica.dto.reporte.VentaPorCategoriaDTO(
                        cat.id,
