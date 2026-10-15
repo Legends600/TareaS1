@@ -5,6 +5,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pe.edu.upeu.Practica.dto.PaginaResponseDTO;
 import pe.edu.upeu.Practica.dto.VentaRequestDTO;
 import pe.edu.upeu.Practica.dto.VentaResponseDTO;
 import pe.edu.upeu.Practica.enums.EstadoVenta;
@@ -55,7 +56,7 @@ public class VentaController {
     }
 
     @GetMapping("/buscar")
-    public ResponseEntity<List<VentaResponseDTO>> buscar(
+    public ResponseEntity<PaginaResponseDTO<VentaResponseDTO>> buscar(
 
             @RequestParam(required = false)
             Long clienteId,
@@ -75,7 +76,13 @@ public class VentaController {
             String ordenarPor,
 
             @RequestParam(required = false, defaultValue = "desc")
-            String direccion) {
+            String direccion,
+
+            @RequestParam(defaultValue = "0")
+            int pagina,
+
+            @RequestParam(defaultValue = "10")
+            int tamanio) {
 
         return ResponseEntity.ok(
                 ventaService.buscar(
@@ -84,8 +91,19 @@ public class VentaController {
                         desde,
                         hasta,
                         ordenarPor,
-                        direccion
+                        direccion,
+                        pagina,
+                        tamanio
                 )
+        );
+    }
+
+    @PatchMapping("/{id}/anular")
+    public ResponseEntity<VentaResponseDTO> anular(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                ventaService.anular(id)
         );
     }
 }

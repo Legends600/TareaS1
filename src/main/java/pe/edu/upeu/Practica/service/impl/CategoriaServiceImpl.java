@@ -10,6 +10,7 @@ import pe.edu.upeu.Practica.entity.Categoria;
 import pe.edu.upeu.Practica.exception.RecursosNoEncontradoException;
 import pe.edu.upeu.Practica.exception.ReglaNegocioException;
 import pe.edu.upeu.Practica.repository.CategoriaRepository;
+import pe.edu.upeu.Practica.repository.ProductoRepository;
 import pe.edu.upeu.Practica.service.service.CategoriaService;
 
 
@@ -17,9 +18,11 @@ import pe.edu.upeu.Practica.service.service.CategoriaService;
 public class CategoriaServiceImpl implements CategoriaService {
     private static final Logger LOG = LoggerFactory.getLogger(CategoriaServiceImpl.class);
     private final CategoriaRepository categoriaRepository;
+    private final ProductoRepository productoRepository;
 
-    public CategoriaServiceImpl(CategoriaRepository categoriaRepository) {
+    public CategoriaServiceImpl(CategoriaRepository categoriaRepository, ProductoRepository productoRepository) {
         this.categoriaRepository = categoriaRepository;
+        this.productoRepository = productoRepository;
     }
 
     @Override
@@ -42,12 +45,19 @@ public class CategoriaServiceImpl implements CategoriaService {
     }
 
     @Override
+    @Transactional
     public CategoriaResponseDTO update(Long aLong, CategoriaRequestDTO t) {
         Categoria categoria = categoriaRepository.findById(aLong).orElseThrow(()->
         new RecursosNoEncontradoException(
                 "Categoria no encontrada con id: " + aLong)
         );
-        categoria.setNombre(t.getNombre());
+        String nombre = t.getNombre().trim();
+        if(categoriaRepository.existsByNombreIgnoreCaseAndIdNot(nombre, aLong)){
+            throw new ReglaNegocioException(
+                    "Ya existe una categoria con el nombre: " + nombre
+            );
+        }
+        categoria.setNombre(nombre);
         categoria.setDescripcion(t.getDescripcion());
         categoria.setEstado(t.getEstado());
 
@@ -72,7 +82,12 @@ public class CategoriaServiceImpl implements CategoriaService {
                 new RecursosNoEncontradoException(
                         "Categoria no encontrada con id: " + aLong)
         );
-    categoriaRepository.delete(categoria);
+        if(productoRepository.existsByCategoriaId(aLong)){
+            throw new ReglaNegocioException(
+                    "No se puede eliminar la categoria \"" + categoria.getNombre() + "\" porque tiene productos asociados"
+            );
+        }
+        categoriaRepository.delete(categoria);
     }
 
     @Override

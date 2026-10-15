@@ -2,20 +2,29 @@ package pe.edu.upeu.Practica.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.Practica.dto.ClienteRequestDTO;
 import pe.edu.upeu.Practica.dto.ClienteResponseDTO;
+import pe.edu.upeu.Practica.dto.PaginaResponseDTO;
 import pe.edu.upeu.Practica.entity.Cliente;
 import pe.edu.upeu.Practica.exception.RecursosNoEncontradoException;
 import pe.edu.upeu.Practica.exception.ReglaNegocioException;
 import pe.edu.upeu.Practica.repository.ClienteRepository;
 import pe.edu.upeu.Practica.service.service.ClienteService;
 
+import java.util.Set;
+
 @Service
 public class ClienteServiceImpl implements ClienteService {
     private static final Logger log =
             LoggerFactory.getLogger(ClienteServiceImpl.class);
+
+    private static final Set<String> CAMPOS_ORDEN =
+            Set.of("id", "dni", "nombres", "apellidos", "email");
+    private static final int TAMANIO_MAXIMO = 100;
 
     private final ClienteRepository clienteRepository;
 
@@ -171,10 +180,18 @@ public class ClienteServiceImpl implements ClienteService {
                                 )
                         );
 
-        clienteRepository.delete(cliente);
+        // Baja lógica: el cliente puede estar referenciado en ventas
+        if (!Boolean.TRUE.equals(cliente.getEstado())) {
+            throw new ReglaNegocioException(
+                    "El cliente con id " + aLong + " ya se encuentra inactivo"
+            );
+        }
+
+        cliente.setEstado(false);
+        clienteRepository.save(cliente);
 
         log.info(
-                "Cliente id={} eliminado correctamente",
+                "Cliente id={} dado de baja correctamente",
                 aLong
         );
     }
@@ -214,5 +231,41 @@ public class ClienteServiceImpl implements ClienteService {
                 .stream()
                 .map(this::convertirResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaResponseDTO<ClienteResponseDTO> listarPaginado(
+            int pagina, int tamanio, String ordenarPor, String direccion) {
+        log.info(
+                "Listando clientes pagina={} tamanio={} ordenarPor={} direccion={}",
+                pagina, tamanio, ordenarPor, direccion
+        );
+
+        if (!CAMPOS_ORDEN.contains(ordenarPor)) {
+            throw new ReglaNegocioException(
+                    "No se puede ordenar por '" + ordenarPor
+                            + "'. Valores permitidos: id, dni, nombres, apellidos, email"
+            );
+        }
+        if (pagina < 0 || tamanio < 1 || tamanio > TAMANIO_MAXIMO) {
+            throw new ReglaNegocioException(
+                    "La página debe ser mayor o igual a 0 y el tamaño estar entre 1 y "
+                            + TAMANIO_MAXIMO
+            );
+        }
+        Sort.Direction sentido = Sort.Direction.fromOptionalString(direccion)
+                .orElseThrow(() -> new ReglaNegocioException(
+                        "La dirección debe ser 'asc' o 'desc'"
+                ));
+
+        // id como segundo criterio para que el orden entre páginas sea estable
+        Sort orden = Sort.by(sentido, ordenarPor).and(Sort.by("id"));
+
+        return PaginaResponseDTO.de(
+                clienteRepository
+                        .findAll(PageRequest.of(pagina, tamanio, orden))
+                        .map(this::convertirResponse)
+        );
     }
 }
