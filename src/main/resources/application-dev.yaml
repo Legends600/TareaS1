@@ -22,3 +22,11 @@ springdoc:
 logging:
   level:
     pe.edu.upeu.Practica: DEBUG
+app:
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173,http://localhost:4200
+  # JWT en desarrollo. El secreto es una clave Base64 de 48 bytes (384 bits).
+  # Es SOLO para clase: en produccion llega por variable de entorno.
+  jwt:
+    secret: w9Z6dP/dzykNH/uiI3Z/KGjBlP0H4Ji+Tuq4fm2cTNuLD4jWafu1gBL74V2SJEvy
+    expiracion-minutos: 60

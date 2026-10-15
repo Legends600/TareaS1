@@ -1,8 +1,12 @@
 package pe.edu.upeu.Practica.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,6 +17,64 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /*
+     * Login fallido: usuario inexistente, contraseña incorrecta o
+     * usuario deshabilitado. Se responde SIEMPRE el mismo mensaje para
+     * no revelar cuál de los datos falló.
+     * HTTP 401
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAuthentication(
+            AuthenticationException ex,
+            HttpServletRequest request) {
+
+        log.warn("Autenticación fallida en {} | motivo={}",
+                request.getRequestURI(),
+                ex.getClass().getSimpleName());
+
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                LocalDateTime.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "Usuario o contraseña incorrectos",
+                request.getRequestURI(),
+                null
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(error);
+    }
+
+    /*
+     * @PreAuthorize rechazó la operación dentro del controlador
+     * (el usuario está autenticado, pero no tiene el permiso).
+     * HTTP 403
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+
+        log.warn("Acceso denegado en {}", request.getRequestURI());
+
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                "No tiene permisos para realizar esta operación",
+                request.getRequestURI(),
+                null
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(error);
+    }
     /*
      * Recurso no encontrado
      * HTTP 404

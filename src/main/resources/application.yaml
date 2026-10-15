@@ -3,3 +3,10 @@ spring:
     name: Practica
   profiles:
       active: dev
+  # El esquema ya existia (creado por Hibernate): Flyway lo toma como
+  # version 1 (baseline) y aplica desde V2__seguridad.sql en adelante.
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
