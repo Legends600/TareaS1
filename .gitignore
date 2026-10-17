@@ -34,3 +34,10 @@ build/
 
 ### Playwright MCP (temporal) ###
 .playwright-mcp/
+
+### Entregables locales (no se publican: el repositorio es publico) ###
+docs/
+evidencias-s10/
+postman/
+pruebas-seguridad/
+.claude/
