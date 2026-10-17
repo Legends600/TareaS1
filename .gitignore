@@ -36,8 +36,14 @@ build/
 .playwright-mcp/
 
 ### Entregables locales (no se publican: el repositorio es publico) ###
-docs/
+# Solo se versiona lo que la guia del curso pide subir al repositorio
+# (Actividad Autonoma S10, Parte D): matriz, informe y coleccion Postman.
+docs/*
+!docs/matriz-seguridad-s10.md
+!docs/matriz-seguridad-s10.xlsx
+!docs/informe-s10.pdf
+postman/*
+!postman/PharmaSoft-S10-Seguridad.json
 evidencias-s10/
-postman/
 pruebas-seguridad/
 .claude/
