@@ -5,9 +5,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import pe.edu.upeu.Practica.dto.auth.CambioPasswordRequestDTO;
 import pe.edu.upeu.Practica.dto.auth.LoginRequestDTO;
 import pe.edu.upeu.Practica.dto.auth.LoginResponseDTO;
 import pe.edu.upeu.Practica.dto.auth.UsuarioResponseDTO;
@@ -40,5 +42,17 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponseDTO> me(Authentication authentication) {
         return ResponseEntity.ok(authService.usuarioActual(authentication.getName()));
+    }
+
+    /*
+     * Protegido (cualquier rol). El usuario se toma del token, no del cuerpo.
+     * Exito -> 204. Actual incorrecta o nueva igual a la actual -> 409.
+     */
+    @PutMapping("/password")
+    public ResponseEntity<Void> cambiarPassword(
+            Authentication authentication,
+            @Valid @RequestBody CambioPasswordRequestDTO request) {
+        authService.cambiarPassword(authentication.getName(), request);
+        return ResponseEntity.noContent().build();
     }
 }
