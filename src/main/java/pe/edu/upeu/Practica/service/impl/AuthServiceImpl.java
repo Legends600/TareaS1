@@ -6,19 +6,23 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.upeu.Practica.dto.auth.CambioPasswordRequestDTO;
 import pe.edu.upeu.Practica.dto.auth.LoginRequestDTO;
 import pe.edu.upeu.Practica.dto.auth.LoginResponseDTO;
 import pe.edu.upeu.Practica.dto.auth.UsuarioResponseDTO;
 import pe.edu.upeu.Practica.entity.Usuario;
 import pe.edu.upeu.Practica.exception.RecursosNoEncontradoException;
+import pe.edu.upeu.Practica.exception.ReglaNegocioException;
 import pe.edu.upeu.Practica.mapper.UsuarioMapper;
 import pe.edu.upeu.Practica.repository.UsuarioRepository;
 import pe.edu.upeu.Practica.security.JwtService;
 import pe.edu.upeu.Practica.security.PermisosPorRol;
 import pe.edu.upeu.Practica.service.service.AuthService;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Service
@@ -31,12 +35,15 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final UsuarioRepository usuarioRepository;
     private final UsuarioMapper usuarioMapper;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthServiceImpl(
             AuthenticationManager authenticationManager,
             JwtService jwtService,
             UsuarioRepository usuarioRepository,
-            UsuarioMapper usuarioMapper) {
+            UsuarioMapper usuarioMapper,
+            PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.usuarioRepository = usuarioRepository;
@@ -84,6 +91,35 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(readOnly = true)
     public UsuarioResponseDTO usuarioActual(String username) {
         return usuarioMapper.toUsuarioResponse(buscar(username));
+    }
+
+    /*
+     * El usuario sale del token (Authentication), nunca del cuerpo.
+     * Se exige la contrasena actual para que un token robado no baste
+     * para adueñarse de la cuenta. Los tokens ya emitidos siguen siendo
+     * validos hasta que venzan (la API no guarda estado de sesion).
+     * Las contrasenas NUNCA se escriben en el log.
+     */
+    @Override
+    @Transactional
+    public void cambiarPassword(String username, CambioPasswordRequestDTO request) {
+        Usuario usuario = buscar(username);
+
+        if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPassword())) {
+            throw new ReglaNegocioException("La contraseña actual no es correcta");
+        }
+        if (request.getPasswordActual().equals(request.getPasswordNueva())) {
+            throw new ReglaNegocioException("La nueva contraseña debe ser distinta de la actual");
+        }
+        // BCrypt solo admite 72 BYTES: una ñ o una tilde ocupan 2 bytes en UTF-8
+        if (request.getPasswordNueva().getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new ReglaNegocioException("La contraseña no puede superar 72 bytes");
+        }
+
+        usuario.setPassword(passwordEncoder.encode(request.getPasswordNueva()));
+        usuarioRepository.save(usuario);
+
+        log.info("Contraseña actualizada: usuario={}", usuario.getUsername());
     }
 
     private Usuario buscar(String username) {
