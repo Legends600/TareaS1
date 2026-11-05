@@ -17,4 +17,6 @@ public class ErrorResponseDTO {
     private String message;
     private String path;
     private Map<String, String> validationErrors;
+    /** Codigo de seguimiento: el mismo [requestId] de las lineas de log. */
+    private String requestId;
 }

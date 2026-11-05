@@ -2,6 +2,8 @@ package pe.edu.upeu.Practica.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "productos", allEntries = true)
     public ProductoResponseDTO create(ProductoRequestDTO t) {
         String nombre = t.getNombre().trim();
         if (productoRepository.existsByNombreIgnoreCase(nombre)) {
@@ -58,6 +61,7 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "productos", allEntries = true)
     public ProductoResponseDTO update(Long aLong, ProductoRequestDTO t) {
         Producto producto = productoRepository.findById(aLong).orElseThrow(() ->
                 new RecursosNoEncontradoException(
@@ -85,6 +89,7 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "productos", key = "'id-' + #aLong")
     public ProductoResponseDTO read(Long aLong) {
         Producto producto = productoRepository.findById(aLong).orElseThrow(() ->
                 new RecursosNoEncontradoException(
@@ -95,6 +100,7 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "productos", allEntries = true)
     public void delete(Long aLong) {
         Producto producto = productoRepository.findById(aLong).orElseThrow(() ->
                 new RecursosNoEncontradoException(
@@ -112,6 +118,8 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "productos",
+            key = "#pagina + '-' + #tamanio + '-' + #ordenarPor + '-' + #direccion")
     public PaginaResponseDTO<ProductoResponseDTO> listarPaginado(
             int pagina, int tamanio, String ordenarPor, String direccion) {
         if (!CAMPOS_ORDEN.contains(ordenarPor)) {

@@ -2,6 +2,7 @@ package pe.edu.upeu.Practica.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -51,7 +52,11 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "productos", allEntries = true) // descuenta stock
     public VentaResponseDTO registrar(VentaRequestDTO request) {
+        long inicio = System.currentTimeMillis();
+        log.info("Inicio registrar venta | clienteId={} | lineas={}",
+                request.getClienteId(), request.getDetalles().size());
         Cliente cliente = clienteRepository.findById(request.getClienteId())
                 .orElseThrow(() ->new RecursosNoEncontradoException("Cliente no encontrado con id: "+ request.getClienteId()));
 
@@ -86,6 +91,8 @@ public class VentaServiceImpl implements VentaService {
                         + ". Otra venta acaba de usar las unidades disponibles");
             }
 
+            log.info("Stock descontado | productoId={} | cantidad={}", producto.getId(), item.getCantidad());
+
             BigDecimal subtotal = producto.getPrecio().multiply(BigDecimal.valueOf(item.getCantidad()));
 
             DetalleVenta detalle = new DetalleVenta();
@@ -103,6 +110,9 @@ public class VentaServiceImpl implements VentaService {
         venta.setTotal(total);
 
         Venta guardada =ventaRepository.save(venta);
+
+        log.info("Fin registrar venta | ventaId={} | total={} | duracionMs={}",
+                guardada.getId(), guardada.getTotal(), System.currentTimeMillis() - inicio);
 
         return convertirResponse(guardada);
     }
@@ -174,6 +184,7 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "productos", allEntries = true) // repone stock
     public VentaResponseDTO anular(Long id) {
         Venta venta = ventaRepository.findById(id).orElseThrow(() ->
                 new RecursosNoEncontradoException("Venta no encontrada con id: " + id));

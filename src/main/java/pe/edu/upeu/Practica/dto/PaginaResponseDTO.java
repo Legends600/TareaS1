@@ -5,12 +5,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Page;
 
+import java.io.Serializable;
 import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class PaginaResponseDTO<T> {
+public class PaginaResponseDTO<T> implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private List<T> contenido;
     private int pagina;
     private int tamanio;
