@@ -42,6 +42,7 @@ docs/*
 !docs/matriz-seguridad-s10.md
 !docs/matriz-seguridad-s10.xlsx
 !docs/informe-s10.pdf
+!docs/informe-s13.pdf
 postman/*
 !postman/PharmaSoft-S10-Seguridad.json
 evidencias-s10/
