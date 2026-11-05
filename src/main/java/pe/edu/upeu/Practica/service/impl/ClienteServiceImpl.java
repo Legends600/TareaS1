@@ -36,10 +36,7 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional
     public ClienteResponseDTO create(ClienteRequestDTO t) {
-        log.info(
-                "Registrando cliente con DNI={}",
-                t.getDni()
-        );
+        log.info("Registrando cliente");
 
         String dni = t.getDni().trim();
         String email = t.getEmail()
