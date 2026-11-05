@@ -47,3 +47,7 @@ postman/*
 evidencias-s10/
 pruebas-seguridad/
 .claude/
+
+### Logs y secretos locales (perfil prod) ###
+logs/
+.env
