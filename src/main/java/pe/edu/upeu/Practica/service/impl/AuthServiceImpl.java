@@ -5,6 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import pe.edu.upeu.Practica.auditoria.EventoAuditoria;
+import pe.edu.upeu.Practica.service.service.AuditoriaService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,14 +39,17 @@ public class AuthServiceImpl implements AuthService {
     private final UsuarioRepository usuarioRepository;
     private final UsuarioMapper usuarioMapper;
     private final PasswordEncoder passwordEncoder;
+    private final AuditoriaService auditoriaService;
 
     public AuthServiceImpl(
             AuthenticationManager authenticationManager,
             JwtService jwtService,
             UsuarioRepository usuarioRepository,
             UsuarioMapper usuarioMapper,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AuditoriaService auditoriaService) {
         this.passwordEncoder = passwordEncoder;
+        this.auditoriaService = auditoriaService;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.usuarioRepository = usuarioRepository;
@@ -65,13 +71,22 @@ public class AuthServiceImpl implements AuthService {
         String username = request.getUsername().trim();
         log.info("Intento de inicio de sesión: usuario={}", username);
 
-        Authentication autenticacion = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, request.getPassword()));
+        Authentication autenticacion;
+        try {
+            autenticacion = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, request.getPassword()));
+        } catch (AuthenticationException ex) {
+            // La operación termina en error: no hay commit que esperar, se
+            // registra directo (el servicio abre su propia transacción).
+            auditoriaService.registrar(EventoAuditoria.login("LOGIN_FALLIDO", username));
+            throw ex;
+        }
 
         UserDetails principal = (UserDetails) autenticacion.getPrincipal();
         Usuario usuario = buscar(principal.getUsername());
         String token = jwtService.generarToken(principal);
         List<String> roles = usuarioMapper.nombresRoles(usuario.getRoles());
+        auditoriaService.registrar(EventoAuditoria.login("LOGIN_EXITOSO", usuario.getUsername()));
 
         log.info("Inicio de sesión correcto: usuario={} roles={}",
                 usuario.getUsername(), roles);

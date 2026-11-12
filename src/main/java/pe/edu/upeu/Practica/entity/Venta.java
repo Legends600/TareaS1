@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import pe.edu.upeu.Practica.enums.EstadoVenta;
 
 import java.math.BigDecimal;
@@ -16,6 +18,7 @@ import java.util.List;
 @Data
 @Entity
 @Table(name = "ventas")
+@EntityListeners(AuditingEntityListener.class)
 public class Venta {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,6 +47,11 @@ public class Venta {
             orphanRemoval = true
     )
     private List<DetalleVenta> detalles = new ArrayList<>();
+
+    /** Vendedor que registró la venta (usuario del token). */
+    @CreatedBy
+    @Column(name = "creado_por", length = 50, updatable = false)
+    private String creadoPor;
 
     @PrePersist
     public void prePersist() {
