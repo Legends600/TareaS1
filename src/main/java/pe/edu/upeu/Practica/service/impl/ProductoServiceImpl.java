@@ -133,10 +133,14 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional(readOnly = true)
+    // Las búsquedas por texto no se guardan en caché: cada término sería una clave nueva
     @Cacheable(cacheNames = "productos",
-            key = "#pagina + '-' + #tamanio + '-' + #ordenarPor + '-' + #direccion")
+            condition = "#nombre == null || #nombre.isBlank()",
+            key = "#pagina + '-' + #tamanio + '-' + #ordenarPor + '-' + #direccion"
+                    + " + '-c' + #categoriaId + '-d' + #disponibles")
     public PaginaResponseDTO<ProductoResponseDTO> listarPaginado(
-            int pagina, int tamanio, String ordenarPor, String direccion) {
+            int pagina, int tamanio, String ordenarPor, String direccion,
+            String nombre, Long categoriaId, boolean disponibles) {
         if (!CAMPOS_ORDEN.contains(ordenarPor)) {
             throw new ReglaNegocioException(
                     "No se puede ordenar por '" + ordenarPor
@@ -153,8 +157,11 @@ public class ProductoServiceImpl implements ProductoService {
 
         // id como segundo criterio para que el orden entre páginas sea estable
         Sort orden = Sort.by(sentido, ordenarPor).and(Sort.by("id"));
+        String patron = nombre == null || nombre.isBlank()
+                ? null : "%" + nombre.trim().toUpperCase() + "%";
         return PaginaResponseDTO.de(
-                productoRepository.findAll(PageRequest.of(pagina, tamanio, orden))
+                productoRepository.buscar(patron, categoriaId, disponibles,
+                                PageRequest.of(pagina, tamanio, orden))
                         .map(this::convertirResponse)
         );
     }
