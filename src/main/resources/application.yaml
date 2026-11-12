@@ -10,6 +10,12 @@ spring:
     baseline-on-migrate: true
     baseline-version: 1
     locations: classpath:db/migration
+  # Las relaciones de cada pagina (detalles, cliente, categoria) se cargan
+  # en lotes con IN (...) y no con una consulta por fila (N+1).
+  jpa:
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50
   data:
     redis:
       host: ${REDIS_HOST:localhost}
