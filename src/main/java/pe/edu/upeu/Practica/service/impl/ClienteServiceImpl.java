@@ -1,5 +1,7 @@
 package pe.edu.upeu.Practica.service.impl;
 
+import org.springframework.context.ApplicationEventPublisher;
+import pe.edu.upeu.Practica.auditoria.EventoAuditoria;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -27,10 +29,13 @@ public class ClienteServiceImpl implements ClienteService {
     private static final int TAMANIO_MAXIMO = 100;
 
     private final ClienteRepository clienteRepository;
+    private final ApplicationEventPublisher eventos;
 
     public ClienteServiceImpl(
-            ClienteRepository clienteRepository) {
+            ClienteRepository clienteRepository,
+            ApplicationEventPublisher eventos) {
         this.clienteRepository = clienteRepository;
+        this.eventos = eventos;
     }
 
     @Override
@@ -82,6 +87,9 @@ public class ClienteServiceImpl implements ClienteService {
                 "Cliente registrado correctamente id={}",
                 guardado.getId()
         );
+        // Sin DNI ni correo en el detalle: la bitácora no guarda datos personales
+        eventos.publishEvent(EventoAuditoria.de("CLIENTE_REGISTRADO", "Cliente",
+                guardado.getId(), null));
         return convertirResponse(guardado);
     }
 
@@ -191,6 +199,7 @@ public class ClienteServiceImpl implements ClienteService {
                 "Cliente id={} dado de baja correctamente",
                 aLong
         );
+        eventos.publishEvent(EventoAuditoria.de("CLIENTE_DESACTIVADO", "Cliente", aLong, null));
     }
 
     private ClienteResponseDTO convertirResponse(

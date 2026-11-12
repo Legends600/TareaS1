@@ -1,5 +1,7 @@
 package pe.edu.upeu.Practica.service.impl;
 
+import org.springframework.context.ApplicationEventPublisher;
+import pe.edu.upeu.Practica.auditoria.EventoAuditoria;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
@@ -41,13 +43,16 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
     private final UsuarioMapper usuarioMapper;
+    private final ApplicationEventPublisher eventos;
 
     public UsuarioServiceImpl(
             UsuarioRepository usuarioRepository,
             EmpleadoRepository empleadoRepository,
             RolRepository rolRepository,
             PasswordEncoder passwordEncoder,
-            UsuarioMapper usuarioMapper) {
+            UsuarioMapper usuarioMapper,
+            ApplicationEventPublisher eventos) {
+        this.eventos = eventos;
         this.usuarioRepository = usuarioRepository;
         this.empleadoRepository = empleadoRepository;
         this.rolRepository = rolRepository;
@@ -183,6 +188,9 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario guardado = usuarioRepository.save(usuario);
         log.info("Estado actualizado usuario={} estado={}",
                 guardado.getUsername(), guardado.getEstado());
+        eventos.publishEvent(EventoAuditoria.de(
+                guardado.getEstado() ? "USUARIO_ACTIVADO" : "USUARIO_DESACTIVADO",
+                "Usuario", guardado.getId(), "username=" + guardado.getUsername()));
 
         return usuarioMapper.toUsuarioResponse(guardado);
     }
