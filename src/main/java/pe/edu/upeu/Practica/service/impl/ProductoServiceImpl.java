@@ -155,8 +155,9 @@ public class ProductoServiceImpl implements ProductoService {
         Sort.Direction sentido = Sort.Direction.fromOptionalString(direccion)
                 .orElseThrow(() -> new ReglaNegocioException("La dirección debe ser 'asc' o 'desc'"));
 
-        // id como segundo criterio para que el orden entre páginas sea estable
-        Sort orden = Sort.by(sentido, ordenarPor).and(Sort.by("id"));
+        // id como segundo criterio para que el orden entre páginas sea estable;
+        // en el mismo sentido, para que Oracle recorra ix_productos_nombre_id
+        Sort orden = Sort.by(sentido, ordenarPor).and(Sort.by(sentido, "id"));
         String patron = nombre == null || nombre.isBlank()
                 ? null : "%" + nombre.trim().toUpperCase() + "%";
         return PaginaResponseDTO.de(
