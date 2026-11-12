@@ -46,6 +46,20 @@ docs/*
 !docs/sql/
 docs/sql/*
 !docs/sql/volumen_pruebas.sql
+!docs/sql/restablecer_demo.sql
+# Sesión 14, autónoma (Parte E): documentación y evidencias del Proyecto Integrador
+!docs/README.md
+!docs/arquitectura.png
+!docs/auditoria.md
+!docs/incidencias.md
+!docs/resultados-pruebas.md
+!docs/guion-demostracion.md
+!docs/checklist-demo.md
+!docs/defensa-tecnica.md
+!docs/evidencias/
+!docs/postman/
+docs/postman/*
+!docs/postman/PharmaBackend.postman_collection.json
 postman/*
 !postman/PharmaSoft-S10-Seguridad.json
 evidencias-s10/
