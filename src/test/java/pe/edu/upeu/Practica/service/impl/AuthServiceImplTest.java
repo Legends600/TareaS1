@@ -14,6 +14,7 @@ import pe.edu.upeu.Practica.exception.ReglaNegocioException;
 import pe.edu.upeu.Practica.mapper.UsuarioMapper;
 import pe.edu.upeu.Practica.repository.UsuarioRepository;
 import pe.edu.upeu.Practica.security.JwtService;
+import pe.edu.upeu.Practica.service.service.AuditoriaService;
 
 import java.util.Optional;
 
@@ -32,6 +33,7 @@ class AuthServiceImplTest {
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private UsuarioMapper usuarioMapper;
     @Mock private PasswordEncoder passwordEncoder;
+    @Mock private AuditoriaService auditoriaService;
 
     private AuthServiceImpl service;
     private Usuario usuario;
@@ -39,7 +41,7 @@ class AuthServiceImplTest {
     @BeforeEach
     void preparar() {
         service = new AuthServiceImpl(authenticationManager, jwtService,
-                usuarioRepository, usuarioMapper, passwordEncoder);
+                usuarioRepository, usuarioMapper, passwordEncoder, auditoriaService);
         usuario = new Usuario();
         usuario.setUsername("vendedor");
         usuario.setPassword("HASH_ACTUAL");

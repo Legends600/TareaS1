@@ -14,6 +14,7 @@ import pe.edu.upeu.Practica.entity.Usuario;
 import pe.edu.upeu.Practica.exception.RecursosNoEncontradoException;
 import pe.edu.upeu.Practica.exception.ReglaNegocioException;
 import pe.edu.upeu.Practica.mapper.UsuarioMapper;
+import org.springframework.context.ApplicationEventPublisher;
 import pe.edu.upeu.Practica.repository.EmpleadoRepository;
 import pe.edu.upeu.Practica.repository.RolRepository;
 import pe.edu.upeu.Practica.repository.UsuarioRepository;
@@ -37,6 +38,7 @@ class UsuarioServiceImplTest {
     @Mock private RolRepository rolRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private UsuarioMapper usuarioMapper;
+    @Mock private ApplicationEventPublisher eventos;
 
     private UsuarioServiceImpl service;
     private Usuario vendedor;
@@ -48,7 +50,7 @@ class UsuarioServiceImplTest {
     @BeforeEach
     void preparar() {
         service = new UsuarioServiceImpl(usuarioRepository, empleadoRepository,
-                rolRepository, passwordEncoder, usuarioMapper);
+                rolRepository, passwordEncoder, usuarioMapper, eventos);
         vendedor = new Usuario();
         vendedor.setUsername("vendedor");
         vendedor.setEstado(true);
