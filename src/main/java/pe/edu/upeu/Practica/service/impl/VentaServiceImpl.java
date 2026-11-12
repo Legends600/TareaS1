@@ -3,6 +3,8 @@ package pe.edu.upeu.Practica.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
+import pe.edu.upeu.Practica.auditoria.EventoAuditoria;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -39,15 +41,18 @@ public class VentaServiceImpl implements VentaService {
     private final VentaRepository ventaRepository;
     private final ClienteRepository clienteRepository;
     private final ProductoRepository productoRepository;
+    private final ApplicationEventPublisher eventos;
 
     public VentaServiceImpl(
             VentaRepository ventaRepository,
             ClienteRepository clienteRepository,
-            ProductoRepository productoRepository) {
+            ProductoRepository productoRepository,
+            ApplicationEventPublisher eventos) {
 
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
         this.productoRepository = productoRepository;
+        this.eventos = eventos;
     }
 
     @Override
@@ -110,6 +115,11 @@ public class VentaServiceImpl implements VentaService {
         venta.setTotal(total);
 
         Venta guardada =ventaRepository.save(venta);
+
+        // Se escribe en la bitácora solo si la transacción se confirma (AuditoriaListener)
+        eventos.publishEvent(EventoAuditoria.de("VENTA_REGISTRADA", "Venta",
+                guardada.getId(),
+                "total=" + guardada.getTotal() + " | items=" + guardada.getDetalles().size()));
 
         log.info("Fin registrar venta | ventaId={} | total={} | duracionMs={}",
                 guardada.getId(), guardada.getTotal(), System.currentTimeMillis() - inicio);
@@ -195,6 +205,8 @@ public class VentaServiceImpl implements VentaService {
         venta.getDetalles().forEach(d ->
                 productoRepository.reponerStock(d.getProducto().getId(), d.getCantidad()));
         log.info("Venta id={} anulada; stock repuesto", id);
+        eventos.publishEvent(EventoAuditoria.de("VENTA_ANULADA", "Venta", id,
+                "total=" + venta.getTotal()));
         return convertirResponse(venta);
     }
 
@@ -222,7 +234,8 @@ public class VentaServiceImpl implements VentaService {
                 clienteNombre,
                 venta.getEstado().name(),
                 venta.getTotal(),
-                detalles
+                detalles,
+                venta.getCreadoPor()
         );
     }
     private static final String CAMPO_ORDEN_POR_DEFECTO = "fecha";

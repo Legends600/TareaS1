@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,6 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 @Table(name = "producto")
+@EntityListeners(AuditingEntityListener.class)
 public class Producto {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,4 +55,14 @@ public class Producto {
     @ManyToOne
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
+
+    /** Usuario del token que creó la fila (lo llena Spring Data JPA). */
+    @CreatedBy
+    @Column(name = "creado_por", length = 50, updatable = false)
+    private String creadoPor;
+
+    /** Usuario del token que hizo la última modificación. */
+    @LastModifiedBy
+    @Column(name = "modificado_por", length = 50)
+    private String modificadoPor;
 }

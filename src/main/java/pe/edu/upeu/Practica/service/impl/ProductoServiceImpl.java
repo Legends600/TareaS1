@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
+import pe.edu.upeu.Practica.auditoria.EventoAuditoria;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -29,10 +31,14 @@ public class ProductoServiceImpl implements ProductoService {
     private static final int TAMANIO_MAXIMO = 100;
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
+    private final ApplicationEventPublisher eventos;
 
-    public ProductoServiceImpl(ProductoRepository productoRepository, CategoriaRepository categoriaRepository) {
+    public ProductoServiceImpl(ProductoRepository productoRepository,
+                               CategoriaRepository categoriaRepository,
+                               ApplicationEventPublisher eventos) {
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
+        this.eventos = eventos;
     }
 
     @Override
@@ -77,6 +83,7 @@ public class ProductoServiceImpl implements ProductoService {
 
         Categoria categoria = buscarCategoriaActiva(t.getCategoriaId());
 
+        BigDecimal precioAnterior = producto.getPrecio();
         producto.setNombre(nombre);
         producto.setPrecio(BigDecimal.valueOf(t.getPrecio()));
         producto.setStock(t.getStock());
@@ -84,6 +91,12 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setCategoria(categoria);
 
         Producto productoActualizado = productoRepository.save(producto);
+        if (precioAnterior.compareTo(productoActualizado.getPrecio()) != 0) {
+            eventos.publishEvent(EventoAuditoria.de("PRECIO_MODIFICADO", "Producto",
+                    productoActualizado.getId(),
+                    productoActualizado.getNombre() + ": " + precioAnterior
+                            + " -> " + productoActualizado.getPrecio()));
+        }
         return convertirResponse(productoActualizado);
     }
 
@@ -114,14 +127,20 @@ public class ProductoServiceImpl implements ProductoService {
         }
         producto.setEstado(false);
         productoRepository.save(producto);
+        eventos.publishEvent(EventoAuditoria.de("PRODUCTO_ELIMINADO", "Producto",
+                producto.getId(), producto.getNombre()));
     }
 
     @Override
     @Transactional(readOnly = true)
+    // Las búsquedas por texto no se guardan en caché: cada término sería una clave nueva
     @Cacheable(cacheNames = "productos",
-            key = "#pagina + '-' + #tamanio + '-' + #ordenarPor + '-' + #direccion")
+            condition = "#nombre == null || #nombre.isBlank()",
+            key = "#pagina + '-' + #tamanio + '-' + #ordenarPor + '-' + #direccion"
+                    + " + '-c' + #categoriaId + '-d' + #disponibles")
     public PaginaResponseDTO<ProductoResponseDTO> listarPaginado(
-            int pagina, int tamanio, String ordenarPor, String direccion) {
+            int pagina, int tamanio, String ordenarPor, String direccion,
+            String nombre, Long categoriaId, boolean disponibles) {
         if (!CAMPOS_ORDEN.contains(ordenarPor)) {
             throw new ReglaNegocioException(
                     "No se puede ordenar por '" + ordenarPor
@@ -136,10 +155,14 @@ public class ProductoServiceImpl implements ProductoService {
         Sort.Direction sentido = Sort.Direction.fromOptionalString(direccion)
                 .orElseThrow(() -> new ReglaNegocioException("La dirección debe ser 'asc' o 'desc'"));
 
-        // id como segundo criterio para que el orden entre páginas sea estable
-        Sort orden = Sort.by(sentido, ordenarPor).and(Sort.by("id"));
+        // id como segundo criterio para que el orden entre páginas sea estable;
+        // en el mismo sentido, para que Oracle recorra ix_productos_nombre_id
+        Sort orden = Sort.by(sentido, ordenarPor).and(Sort.by(sentido, "id"));
+        String patron = nombre == null || nombre.isBlank()
+                ? null : "%" + nombre.trim().toUpperCase() + "%";
         return PaginaResponseDTO.de(
-                productoRepository.findAll(PageRequest.of(pagina, tamanio, orden))
+                productoRepository.buscar(patron, categoriaId, disponibles,
+                                PageRequest.of(pagina, tamanio, orden))
                         .map(this::convertirResponse)
         );
     }
@@ -174,7 +197,9 @@ public class ProductoServiceImpl implements ProductoService {
                 producto.getCategoria().getId(),
                 producto.getCategoria().getNombre(),
                 producto.getFechaCreacion(),
-                producto.getFechaModificacion()
+                producto.getFechaModificacion(),
+                producto.getCreadoPor(),
+                producto.getModificadoPor()
         );
     }
 }

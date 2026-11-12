@@ -43,6 +43,9 @@ docs/*
 !docs/matriz-seguridad-s10.xlsx
 !docs/informe-s10.pdf
 !docs/informe-s13.pdf
+!docs/sql/
+docs/sql/*
+!docs/sql/volumen_pruebas.sql
 postman/*
 !postman/PharmaSoft-S10-Seguridad.json
 evidencias-s10/

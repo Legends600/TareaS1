@@ -206,7 +206,9 @@ public class ClienteServiceImpl implements ClienteService {
                 cliente.getDireccion(),
                 cliente.getEstado(),
                 cliente.getFechaCreacion(),
-                cliente.getFechaModificacion()
+                cliente.getFechaModificacion(),
+                cliente.getCreadoPor(),
+                cliente.getModificadoPor()
         );
     }
 

@@ -23,8 +23,12 @@ public class ProductoController {
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "10") int tamanio,
             @RequestParam(defaultValue = "nombre") String ordenarPor,
-            @RequestParam(defaultValue = "asc") String direccion) {
-        return ResponseEntity.ok(productoService.listarPaginado(pagina, tamanio, ordenarPor, direccion));
+            @RequestParam(defaultValue = "asc") String direccion,
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) Long categoriaId,
+            @RequestParam(defaultValue = "false") boolean disponibles) {
+        return ResponseEntity.ok(productoService.listarPaginado(
+                pagina, tamanio, ordenarPor, direccion, nombre, categoriaId, disponibles));
     }
 
     @GetMapping("/{id}")
